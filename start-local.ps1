@@ -15,8 +15,7 @@ try {
     }
     Wait-Healthy 'http://127.0.0.1:8080/actuator/health'
     if (-not (Is-Healthy 'http://127.0.0.1:5173/')) {
-        $bundledNode='C:\Users\user\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe'
-        $nodeExecutable=if ($env:NODE24_HOME) { Join-Path $env:NODE24_HOME 'node.exe' } elseif (Test-Path -LiteralPath $bundledNode) { $bundledNode } else { (Get-Command node.exe).Source }
+        $nodeExecutable=if ($env:NODE24_HOME) { Join-Path $env:NODE24_HOME 'node.exe' } else { (Get-Command node.exe).Source }
         $version=& $nodeExecutable -p 'process.versions.node'
         if ([Version]$version -lt [Version]'24.15.0' -or [Version]$version -ge [Version]'25.0.0') { throw 'Use Node 24 LTS. Set NODE24_HOME to its installation directory.' }
         $vite=Join-Path $projectRoot 'frontend\node_modules\vite\bin\vite.js'
@@ -27,5 +26,5 @@ try {
     Wait-Healthy 'http://127.0.0.1:5173/api/public/config'
     Write-Output 'Website ready: http://127.0.0.1:5173/'
     Write-Output 'Backend healthy: http://127.0.0.1:8080/actuator/health'
-    Write-Output 'Background server logs are in D:\GuestHouse\.logs.'
+    Write-Output 'Background server logs are in the repositorys .logs directory.'
 } finally { Pop-Location }

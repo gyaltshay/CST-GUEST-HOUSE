@@ -3,6 +3,6 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  server: { port: 5173, strictPort: true, proxy: { '/api': 'http://127.0.0.1:8080' } },
+  server: { port: 5173, strictPort: true, proxy: { '/api/health': { target: 'http://127.0.0.1:8080', rewrite: () => '/actuator/health' }, '/api': 'http://127.0.0.1:8080' } },
   test: { environment: 'jsdom', setupFiles: ['./src/test-setup.ts'], css: false },
 })
