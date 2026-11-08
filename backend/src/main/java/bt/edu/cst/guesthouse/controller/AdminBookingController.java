@@ -21,6 +21,9 @@ public class AdminBookingController {
     @PatchMapping("/bookings/{id}/check-in") public Summary checkIn(@PathVariable UUID id,@AuthenticationPrincipal Jwt jwt) { return service.checkIn(id,actor(jwt)); }
     @PatchMapping("/bookings/{id}/check-out") public Summary checkOut(@PathVariable UUID id,@AuthenticationPrincipal Jwt jwt) { return service.checkOut(id,actor(jwt)); }
     @GetMapping("/rooms") public List<RoomView> rooms() { return service.rooms(); }
+    @PutMapping("/rooms/{id}") public RoomView roomDetails(@PathVariable UUID id,@Valid @RequestBody RoomDetails request,@AuthenticationPrincipal Jwt jwt) { return service.roomDetails(id,request,actor(jwt)); }
+    @PatchMapping("/rooms/{id}/status") public RoomView status(@PathVariable UUID id,@Valid @RequestBody RoomStatus request,@AuthenticationPrincipal Jwt jwt) { return service.roomStatus(id,request.status(),actor(jwt)); }
+    @PutMapping("/rooms/{id}/capacity") public RoomView capacity(@PathVariable UUID id,@Valid @RequestBody Capacity request,@AuthenticationPrincipal Jwt jwt) { return service.capacity(id,request,actor(jwt)); }
     @PatchMapping("/bookings/{id}/extra-bed") public Summary bed(@PathVariable UUID id,@Valid @RequestBody BedDecision request,@AuthenticationPrincipal Jwt jwt) { return service.bedDecision(id,request,actor(jwt)); }
     @PatchMapping("/bookings/{id}/remarks") public Summary remarks(@PathVariable UUID id,@Valid @RequestBody Remark request,@AuthenticationPrincipal Jwt jwt) { return service.remarks(id,request.remark(),actor(jwt)); }
     @PatchMapping("/bookings/{id}/reopen") public Summary reopen(@PathVariable UUID id,@Valid @RequestBody Remark request,@AuthenticationPrincipal Jwt jwt) { return service.reopen(id,request.remark(),actor(jwt)); }

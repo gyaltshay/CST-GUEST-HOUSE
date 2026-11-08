@@ -11,4 +11,7 @@ public class Room {
     public Integer maxCapacity;
     public boolean supportsExtraBed;
     public String serviceStatus;
+    public String location;
+    public String description;
+    public String amenities;
 }
