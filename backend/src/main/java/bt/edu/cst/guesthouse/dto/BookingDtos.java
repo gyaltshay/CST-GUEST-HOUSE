@@ -28,7 +28,7 @@ public final class BookingDtos {
         String location,String description,String amenities) {
         public static RoomView from(Room r,int guests) { return new RoomView(r.id,r.roomNumber,r.category,r.standardBeds,
             r.normalCapacity,r.maxCapacity,r.supportsExtraBed,r.serviceStatus,r.normalCapacity!=null && guests>r.normalCapacity,
-            r.location,r.description,r.amenities); }
+            null,null,null); }
     }
     public record Summary(UUID id,String reference,UUID userId,String fullName,String email,String phone,
         String organization,String designation,String guestCategory,String purpose,int guests,
