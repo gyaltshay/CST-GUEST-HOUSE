@@ -1,29 +1,20 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import { App } from './App'
 import { api } from './services/api'
 
 afterEach(() => vi.restoreAllMocks())
 
-describe('Sprint 2 foundation', () => {
-  it('renders the home page and its availability link', () => {
-    render(<MemoryRouter><App /></MemoryRouter>)
-    expect(screen.getByRole('heading', { name: 'CST Guest House' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Room availability' })).toHaveAttribute('href', '/availability')
-  })
+it('renders the public home and its stay link', () => {
+  vi.spyOn(api, 'get').mockResolvedValue({ data: { registrationEnabled: true } })
+  render(<MemoryRouter><App /></MemoryRouter>)
+  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('A thoughtful stay')
+  expect(within(screen.getByRole('main')).getByRole('link', { name: 'Plan your stay' })).toHaveAttribute('href', '/app/availability')
+})
 
-  it('shows loading and then the backend health status', async () => {
-    vi.spyOn(api, 'get').mockResolvedValue({ data: { status: 'UP' } })
-    render(<MemoryRouter initialEntries={['/availability']}><App /></MemoryRouter>)
-    expect(screen.getByRole('status')).toHaveTextContent('Checking')
-    expect(await screen.findByText('Guest house service: UP')).toBeInTheDocument()
-  })
-
-  it('shows a retry option when the backend cannot be reached', async () => {
-    vi.spyOn(api, 'get').mockRejectedValue(new Error('Unavailable'))
-    render(<MemoryRouter initialEntries={['/availability']}><App /></MemoryRouter>)
-    expect(await screen.findByRole('alert')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
-  })
+it('asks an unauthenticated visitor to sign in before viewing availability', async () => {
+  vi.spyOn(api, 'get').mockResolvedValue({ data: { registrationEnabled: true } })
+  render(<MemoryRouter initialEntries={['/app/availability']}><App /></MemoryRouter>)
+  expect(await screen.findByRole('button', { name: /sign in/i })).toBeInTheDocument()
 })
