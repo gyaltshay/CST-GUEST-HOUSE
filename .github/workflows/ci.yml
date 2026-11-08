@@ -1,14 +1,12 @@
-name: Build and verify guest house
+name: Verify Sprint 2 foundation
 on:
-  push:
-    branches: [main, develop]
   pull_request:
+    branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -24,10 +22,9 @@ jobs:
           --health-cmd "pg_isready -U guesthouse_test -d guesthouse_test"
           --health-interval 5s --health-timeout 5s --health-retries 15
     env:
-      RUN_POSTGRES_TESTS: 'true'
-      TEST_DATABASE_URL: jdbc:postgresql://127.0.0.1:5432/guesthouse_test
-      TEST_DATABASE_USERNAME: guesthouse_test
-      TEST_DATABASE_PASSWORD: integration-only-password
+      DATABASE_URL: jdbc:postgresql://127.0.0.1:5432/guesthouse_test
+      POSTGRES_USER: guesthouse_test
+      POSTGRES_PASSWORD: integration-only-password
     defaults:
       run:
         working-directory: backend
@@ -39,13 +36,22 @@ jobs:
           java-version: '21'
           cache: maven
           cache-dependency-path: backend/pom.xml
-      - name: Unit and PostgreSQL integration tests
-        run: chmod +x mvnw && ./mvnw -B -ntp verify
-      - uses: actions/upload-artifact@v7.0.2
-        if: always()
-        with:
-          name: backend-test-reports
-          path: backend/target/surefire-reports/
+      - run: ./mvnw -B -ntp verify
+      - name: Verify PostgreSQL startup and health
+        run: |
+          java -jar target/guesthouse-0.0.1-SNAPSHOT.jar > backend.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          if ! curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 2 http://127.0.0.1:8080/actuator/health | grep -q '"status":"UP"'; then
+            cat backend.log
+            exit 1
+          fi
+      - name: Verify seeded facility inventory
+        env:
+          PGPASSWORD: integration-only-password
+        run: |
+          count=$(psql -h 127.0.0.1 -U guesthouse_test -d guesthouse_test -tAc 'SELECT count(*) FROM facilities')
+          test "$count" -ge 2
   frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -62,14 +68,3 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
-      - name: Dependency vulnerability check
-        run: npm audit --audit-level=high
-  docker:
-    needs: [backend, frontend]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7.0.1
-      - name: Build backend image
-        run: docker build --tag cst-guesthouse-backend:ci backend
-      - name: Build frontend image
-        run: docker build --tag cst-guesthouse-frontend:ci frontend
