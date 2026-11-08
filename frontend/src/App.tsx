@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppLayout, Protected, PublicLayout, ScrollToTop } from './components/Layout'
 import { AuthProvider } from './context/AuthContext'
 import { AdminBookingsPage, AdminDashboard, ArrivalsPage } from './pages/AdminPages'
+import { ReportsPage, UsersPage } from './pages/ManagementPages'
 import { AuthPage } from './pages/AuthPages'
 import { AboutPage, ContactPage, FacilitiesPage, HomePage, NotFoundPage, RoomsPage } from './pages/PublicPages'
 import { AvailabilityPage, BookingDetailsPage, MyBookingsPage, NewBookingPage, ProfilePage, RoomDetailsPage, UserDashboard } from './pages/UserPages'
@@ -42,6 +43,8 @@ export function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="bookings" element={<AdminBookingsPage />} />
           <Route path="bookings/:id" element={<BookingDetailsPage admin />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="reports" element={<ReportsPage />} />
           <Route path="current-guests" element={<AdminBookingsPage current />} />
           <Route path="arrivals" element={<ArrivalsPage />} />
           <Route path="profile" element={<ProfilePage />} />
