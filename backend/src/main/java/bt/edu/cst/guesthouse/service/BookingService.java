@@ -16,11 +16,12 @@ public class BookingService {
     private final BookingRepository bookings;
     private final RoomRepository rooms;
     private final BookingHistoryRepository history;
+    private final AuditLogRepository audit;
     private final FacilityService facilities;
     private static final UUID NONE=new UUID(0,0);
     private static final ZoneId ZONE=ZoneId.of("Asia/Thimphu");
-    public BookingService(BookingRepository bookings,RoomRepository rooms,BookingHistoryRepository history,FacilityService facilities) {
-        this.bookings=bookings; this.rooms=rooms; this.history=history; this.facilities=facilities;
+    public BookingService(BookingRepository bookings,RoomRepository rooms,BookingHistoryRepository history,AuditLogRepository audit,FacilityService facilities) {
+        this.bookings=bookings; this.rooms=rooms; this.history=history; this.audit=audit; this.facilities=facilities;
     }
     private ResponseStatusException conflict(String message) { return new ResponseStatusException(HttpStatus.CONFLICT,message); }
     private Booking get(UUID id,UUID actor,boolean admin,boolean lock) {
@@ -163,6 +164,41 @@ public class BookingService {
         b.actualCheckOut=Instant.now(); b.extraBedAdded=false;
         event(b,"CHECKED_IN","CHECKED_OUT",actor,"Guest checked out");
         b.status="CHECKED_OUT"; return save(b,actor,"COMPLETED","Stay completed; room released");
+    }
+    private void auditRoom(UUID id,UUID actor,String action,String description) {
+        AuditLog log=new AuditLog(); log.id=UUID.randomUUID(); log.actorId=actor; log.entityId=id;
+        log.action=action; log.description=description; log.createdAt=Instant.now(); audit.save(log);
+    }
+    private String roomText(String value) { return value==null || value.isBlank()?null:value.strip(); }
+    @Transactional public RoomView roomDetails(UUID id,RoomDetails request,UUID actor) {
+        Room r=rooms.lockById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"Room not found"));
+        if (bookings.activeForRoom(id)>0) throw conflict("Resolve active allocations before editing room details");
+        String number=request.roomNumber().strip();
+        if (rooms.existsByRoomNumberIgnoreCaseAndIdNot(number,id)) throw conflict("Room number is already in use");
+        if ("STANDARD".equals(r.category) && !Objects.equals(request.beds(),2))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Standard rooms retain two regular beds");
+        String previous=r.roomNumber;
+        r.roomNumber=number; r.standardBeds=request.beds(); r.location=roomText(request.location());
+        r.description=roomText(request.description()); r.amenities=roomText(request.amenities());
+        rooms.saveAndFlush(r);
+        auditRoom(id,actor,"ROOM_DETAILS","Room "+previous+" details updated; current number "+number);
+        return RoomView.from(r,0);
+    }
+    @Transactional public RoomView roomStatus(UUID id,ServiceStatus status,UUID actor) {
+        Room r=rooms.lockById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (status!=ServiceStatus.ACTIVE && bookings.activeForRoom(id)>0) throw conflict("Resolve active room allocations before changing serviceability");
+        String previous=r.serviceStatus;
+        r.serviceStatus=status.name(); rooms.saveAndFlush(r);
+        auditRoom(id,actor,"ROOM_STATUS",previous+" -> "+r.serviceStatus); return RoomView.from(r,0);
+    }
+    @Transactional public RoomView capacity(UUID id,Capacity request,UUID actor) {
+        Room r=rooms.lockById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (!"SPECIAL".equals(r.category)) throw conflict("Standard rooms retain capacity 2, or 3 with an extra bed");
+        if (bookings.activeForRoom(id)>0) throw conflict("Resolve active allocations before changing capacity");
+        if (!Objects.equals(request.normalCapacity(),request.maxCapacity()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Special rooms do not support extra beds; normal and maximum capacity must match");
+        r.normalCapacity=request.normalCapacity(); r.maxCapacity=request.maxCapacity(); rooms.saveAndFlush(r);
+        auditRoom(id,actor,"ROOM_CAPACITY","Special room capacity configured as "+request.normalCapacity()); return RoomView.from(r,0);
     }
     @Transactional public Summary bedDecision(UUID id,BedDecision request,UUID actor) {
         Booking b=get(id,actor,true,true); state(b,"PENDING","APPROVED");
