@@ -105,4 +105,17 @@ class PostgresIntegrationTests {
     private String convention(LocalDate day,String start,String end) throws Exception {
         var result=call("POST","/convention-hall/requests",convention(day,start,end,null),user); assertEquals(201,result.status); return result.body.path("id").asText();
     }
+    @Test void completeThreeGuestLifecycleRequiresBedAndReleasesInventory() throws Exception {
+        assertEquals(400,call("POST","/bookings",booking(3,false,today),user).status);
+        String id=createBooking(3,true,today);
+        assertEquals(409,approve(id,false).status); assertEquals(200,approve(id,true).status);
+        assertEquals(409,call("PATCH","/admin/bookings/"+id+"/check-in",null,admin).status);
+        assertEquals(200,call("PATCH","/admin/bookings/"+id+"/extra-bed/setup",Map.of("added",true),admin).status);
+        assertEquals(200,call("PATCH","/admin/bookings/"+id+"/check-in",null,admin).status);
+        assertEquals(200,call("PATCH","/admin/bookings/"+id+"/check-out",null,admin).status);
+        var detail=call("GET","/bookings/"+id,null,user).body;
+        assertEquals("COMPLETED",detail.path("booking").path("status").asText());
+        assertTrue(detail.path("timeline").toString().contains("CHECKED_OUT"));
+        assertEquals(0,jdbc.queryForObject("SELECT count(*) FROM bookings WHERE assigned_room_id=? AND status IN ('APPROVED','CHECKED_IN')",Integer.class,UUID.fromString(ROOM)));
+    }
 }
