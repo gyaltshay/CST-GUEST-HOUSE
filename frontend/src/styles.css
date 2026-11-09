@@ -16,3 +16,8 @@ th{color:#60748c;font-size:11px}table{font-size:12px}td strong{font-size:12px}td
 
 .table-scroll{position:relative}
 .room-photo-placeholder{height:170px;background:#eaf0f7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#567291;font-size:12px}
+
+.facility-property-photo { width: 100%; height: clamp(200px, 30vw, 340px); object-fit: cover; object-position: center 58%; border-radius: 8px; margin: 0.75rem 0; }
+.room-illustration { position: relative; margin: 0; }
+.room-illustration img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; }
+.room-illustration figcaption { padding: 0.4rem 0.65rem; background: #eef2f5; color: #334155; font-size: 0.75rem; }

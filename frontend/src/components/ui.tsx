@@ -1,7 +1,7 @@
 import { Children, cloneElement, isValidElement, useEffect, useId, useRef, type ReactNode, type FormEvent } from 'react'
 import { ArrowRight, LoaderCircle, X, AlertCircle, CalendarDays } from 'lucide-react'
 import { Link } from 'react-router-dom'
-export function label(value: string) { return value.toLowerCase().replaceAll('_', ' ').replace(/\b\w/g, char => char.toUpperCase()) }
+export function label(value: string) { if (value === 'CONVENTION') return 'Conference'; return value.toLowerCase().replaceAll('_', ' ').replace(/\b\w/g, char => char.toUpperCase()) }
 export function date(value: string) { return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Thimphu' }).format(new Date(value.length === 10 ? `${value}T00:00:00+06:00` : value)) }
 export function today() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Thimphu', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()) }
 export function tomorrow(value = today()) { let d = new Date(`${value}T12:00:00Z`); if (Number.isNaN(d.getTime())) d = new Date(`${today()}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10) }
