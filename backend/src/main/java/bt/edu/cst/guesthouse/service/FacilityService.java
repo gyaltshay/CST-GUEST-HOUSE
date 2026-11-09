@@ -73,6 +73,11 @@ public class FacilityService {
         linkedBooking(booking,actor,false);
         Facility facility=facility(type);
         if (!facility.active) throw conflict("Facility is unavailable");
+        int capacity = type == Type.CONVENTION ? 16 : 18;
+        if (count > capacity) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                facility.name + " accommodates up to " + capacity + " people");
+        }
         FacilityRequest r=new FacilityRequest(); r.id=UUID.randomUUID(); r.facilityId=facility.id;
         r.userId=actor; r.bookingId=booking; r.title=title.strip(); r.purpose=purpose.strip();
         r.usageDate=date; r.startTime=start; r.endTime=end; r.mealPeriod=meal; r.participants=count;

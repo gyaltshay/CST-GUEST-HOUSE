@@ -244,6 +244,19 @@ class PostgresIntegrationTests {
         assertEquals("CANCELLED",call("GET","/facility-requests/"+pending,null,user).body.path("request").path("status").asText());
         assertEquals(409,call("PATCH","/admin/convention-hall/"+pending+"/approve",reason,admin).status);
     }
+    @Test void facilityRequestsRespectTheConfirmedHallCapacities() throws Exception {
+        LocalDate day=today.plusDays(30);
+        var conference=convention(day,"10:00","11:00",null);
+        conference.put("expectedParticipants",17);
+        assertEquals(400,call("POST","/convention-hall/requests",conference,user).status);
+        conference.put("expectedParticipants",16);
+        assertEquals(201,call("POST","/convention-hall/requests",conference,user).status);
+        var dining=new HashMap<String,Object>(Map.of("title","Guest lunch","purpose","Capacity check",
+            "usageDate",day.toString(),"mealPeriod","LUNCH","numberOfGuests",19));
+        assertEquals(400,call("POST","/dining-hall/requests",dining,user).status);
+        dining.put("numberOfGuests",18);
+        assertEquals(201,call("POST","/dining-hall/requests",dining,user).status);
+    }
     @Test void diningPeriodsAndCustomIntervalsShareConflictProtection() throws Exception {
         LocalDate day=today.plusDays(35); var reason=Map.of("remark","Integration dining review");
         Map<String,Object> lunch=Map.of("title","Guest lunch","purpose","Hall scheduling","usageDate",day.toString(),"mealPeriod","LUNCH","numberOfGuests",8);
